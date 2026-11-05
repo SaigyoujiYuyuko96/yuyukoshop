@@ -85,7 +85,7 @@ npm install
 npm run dev
 ```
 
-跑在 `http://localhost:5176`（5174 被占用时 Vite 自动顺延）。`vite.config.js` 把 `/api` 和 `/uploads` 代理到 8080。
+跑在 `http://localhost:5174`（端口被占用时 Vite 会自动顺延，终端里会打印实际地址）。`vite.config.js` 把 `/api` 和 `/uploads` 代理到 8080。
 
 **4. 商品图片**
 
