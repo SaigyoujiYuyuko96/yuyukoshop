@@ -1,0 +1,47 @@
+name: build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  backend:
+    name: backend compiles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+          cache: maven
+
+      # 这里只编译，不跑测试。仓库里唯一的测试是 @SpringBootTest 的
+      # contextLoads，它需要一个真的 MySQL 才能启动 Spring 上下文；
+      # 在 CI 里硬起一个 MySQL 属于另一次改动的范围。
+      - name: Compile
+        working-directory: yuyukoshop
+        run: mvn -B -ntp -q compile
+
+  frontend:
+    name: frontend builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: yuyukoshop-frontend/package-lock.json
+
+      - name: Install
+        working-directory: yuyukoshop-frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: yuyukoshop-frontend
+        run: npm run build
