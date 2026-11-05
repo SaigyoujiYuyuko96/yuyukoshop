@@ -1,0 +1,472 @@
+/* ============================================
+   幽幽子Shop - 日系赛博朋克设计系统
+   ============================================ */
+
+/* ========== 字体导入 ========== */
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=Noto+Sans+SC:wght@300;400;500;700&family=Orbitron:wght@400;500;700;900&display=swap');
+
+/* ========== CSS 变量 ========== */
+:root {
+  /* 主色调 - 赛博朋克霓虹 */
+  --neon-cyan: #00F5FF;
+  --neon-purple: #B388FF;
+  --neon-pink: #FF6B9D;
+  --neon-blue: #00D4FF;
+  --neon-green: #00FF88;
+  --neon-yellow: #FFD700;
+  --neon-orange: #FF8C00;
+  
+  /* 樱花色系 */
+  --sakura: #FFB7C5;
+  --sakura-light: #FFD4DC;
+  --sakura-dark: #FF8FA3;
+  
+  /* 背景色 - 深邃夜空 */
+  --bg-primary: #0A0A0F;
+  --bg-secondary: #12121A;
+  --bg-tertiary: #1A1A2E;
+  --bg-card: rgba(26, 26, 46, 0.6);
+  --bg-elevated: rgba(30, 30, 50, 0.8);
+  
+  /* 玻璃态 */
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.12);
+  
+  /* 文字颜色 */
+  --text-primary: #F0F0F5;
+  --text-secondary: #9CA3AF;
+  --text-muted: #6B7280;
+  --text-accent: var(--neon-cyan);
+  
+  /* 渐变 */
+  --gradient-primary: linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-pink) 100%);
+  --gradient-secondary: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-blue) 100%);
+  --gradient-sakura: linear-gradient(135deg, var(--sakura) 0%, var(--neon-pink) 100%);
+  --gradient-dark: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  
+  /* 阴影 */
+  --shadow-glow-purple: 0 0 20px rgba(179, 136, 255, 0.4);
+  --shadow-glow-cyan: 0 0 20px rgba(0, 245, 255, 0.4);
+  --shadow-glow-pink: 0 0 20px rgba(255, 107, 157, 0.4);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --shadow-elevated: 0 16px 48px rgba(0, 0, 0, 0.4);
+  
+  /* 边框 */
+  --border-radius-sm: 8px;
+  --border-radius-md: 12px;
+  --border-radius-lg: 16px;
+  --border-radius-xl: 24px;
+  --border-radius-full: 9999px;
+  
+  /* 间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+  
+  /* 动画 */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  --transition-bounce: 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* ========== 全局重置 ========== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Noto Sans SC', 'Zen Maru Gothic', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========== 滚动条美化 ========== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--neon-purple), var(--neon-pink));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--neon-cyan), var(--neon-purple));
+}
+
+/* ========== 选中文本样式 ========== */
+::selection {
+  background: rgba(179, 136, 255, 0.3);
+  color: var(--text-primary);
+}
+
+/* ========== 链接样式 ========== */
+a {
+  color: var(--neon-cyan);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--neon-pink);
+}
+
+/* ========== 按钮基础样式 ========== */
+.cyber-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  font-family: 'Orbitron', 'Noto Sans SC', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: none;
+  border-radius: var(--border-radius-full);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.cyber-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.cyber-btn:hover::before {
+  left: 100%;
+}
+
+.cyber-btn-primary {
+  background: var(--gradient-primary);
+  color: #fff;
+  box-shadow: var(--shadow-glow-purple);
+}
+
+.cyber-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(179, 136, 255, 0.6), 0 0 60px rgba(255, 107, 157, 0.3);
+}
+
+.cyber-btn-secondary {
+  background: transparent;
+  color: var(--neon-cyan);
+  border: 1px solid var(--neon-cyan);
+}
+
+.cyber-btn-secondary:hover {
+  background: rgba(0, 245, 255, 0.1);
+  box-shadow: var(--shadow-glow-cyan);
+}
+
+/* ========== 卡片样式 ========== */
+.cyber-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  transition: all var(--transition-normal);
+}
+
+.cyber-card:hover {
+  border-color: var(--neon-purple);
+  box-shadow: var(--shadow-glow-purple), var(--shadow-card);
+  transform: translateY(-4px);
+}
+
+/* ========== 输入框样式 ========== */
+.cyber-input {
+  width: 100%;
+  padding: 12px 16px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-md);
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.cyber-input:focus {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 0 3px rgba(0, 245, 255, 0.1), var(--shadow-glow-cyan);
+}
+
+.cyber-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* ========== 标题样式 ========== */
+.cyber-title {
+  font-family: 'Zen Maru Gothic', 'Noto Sans SC', sans-serif;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 2px;
+}
+
+.cyber-title-gradient {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ========== 霓虹文字效果 ========== */
+.neon-text-cyan {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan), 0 0 40px var(--neon-cyan);
+}
+
+.neon-text-purple {
+  color: var(--neon-purple);
+  text-shadow: 0 0 10px var(--neon-purple), 0 0 20px var(--neon-purple), 0 0 40px var(--neon-purple);
+}
+
+.neon-text-pink {
+  color: var(--neon-pink);
+  text-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink), 0 0 40px var(--neon-pink);
+}
+
+/* ========== 动画关键帧 ========== */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 0.8;
+    filter: brightness(1.2);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes rotate-glow {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
+
+@keyframes border-flow {
+  0%, 100% {
+    border-color: var(--neon-purple);
+  }
+  33% {
+    border-color: var(--neon-cyan);
+  }
+  66% {
+    border-color: var(--neon-pink);
+  }
+}
+
+/* ========== 动画类 ========== */
+.animate-slide-up {
+  animation: slide-up 0.6s ease forwards;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.6s ease forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.4s ease forwards;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-border-flow {
+  animation: border-flow 3s linear infinite;
+}
+
+/* ========== 背景效果 ========== */
+.bg-grid {
+  background-image: 
+    linear-gradient(rgba(179, 136, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(179, 136, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+.bg-noise {
+  position: relative;
+}
+
+.bg-noise::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.02;
+  pointer-events: none;
+}
+
+/* ========== 装饰线条 ========== */
+.cyber-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--neon-purple), var(--neon-cyan), var(--neon-pink), transparent);
+}
+
+.cyber-line-vertical {
+  width: 1px;
+  background: linear-gradient(180deg, transparent, var(--neon-purple), var(--neon-cyan), var(--neon-pink), transparent);
+}
+
+/* ========== 角标样式 ========== */
+.cyber-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-radius: var(--border-radius-full);
+  text-transform: uppercase;
+}
+
+.cyber-badge-hot {
+  background: var(--gradient-primary);
+  color: #fff;
+}
+
+.cyber-badge-new {
+  background: var(--gradient-secondary);
+  color: #000;
+}
+
+.cyber-badge-sale {
+  background: var(--neon-pink);
+  color: #fff;
+}
+
+/* ========== 加载动画 ========== */
+.cyber-loading {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--glass-border);
+  border-top-color: var(--neon-cyan);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========== 响应式断点 ========== */
+@media (max-width: 1200px) {
+  :root {
+    --spacing-xl: 24px;
+    --spacing-2xl: 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    font-size: 13px;
+    --spacing-lg: 16px;
+    --spacing-xl: 20px;
+    --spacing-2xl: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    font-size: 12px;
+  }
+}

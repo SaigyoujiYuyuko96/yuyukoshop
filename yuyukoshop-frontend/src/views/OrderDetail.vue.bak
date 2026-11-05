@@ -1,0 +1,978 @@
+<template>
+  <div class="order-detail-page">
+    <NavHeader />
+    <div class="cyber-container" v-loading="loading">
+      <!-- 返回导航 -->
+      <div class="back-nav" @click="$router.push('/orders')">
+        <span class="back-arrow">&#8592;</span>
+        <span class="back-text">返回订单列表</span>
+        <span class="back-line"></span>
+      </div>
+
+      <!-- 页面标题 -->
+      <div class="page-header">
+        <div class="header-decoration">
+          <span class="deco-line"></span>
+          <span class="deco-diamond"></span>
+          <span class="deco-line"></span>
+        </div>
+        <h2 class="page-title">
+          <span class="title-icon">&#9830;</span>
+          订单详情
+          <span class="title-icon">&#9830;</span>
+        </h2>
+        <p class="page-subtitle">ORDER DETAIL</p>
+      </div>
+
+      <template v-if="order">
+        <!-- 订单信息卡片 -->
+        <div class="glass-card info-card">
+          <div class="card-title-bar">
+            <div class="title-left">
+              <span class="title-indicator"></span>
+              <span class="title-text">订单信息</span>
+              <span class="title-en">ORDER INFO</span>
+            </div>
+            <span :class="['neon-badge', `badge-${order.status}`]">
+              <span class="badge-dot"></span>
+              {{ order.statusText }}
+            </span>
+          </div>
+
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">订单编号</span>
+              <span class="info-value order-no-val">{{ order.orderNo }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">下单时间</span>
+              <span class="info-value">{{ order.createTime }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">收货人</span>
+              <span class="info-value">{{ order.receiverName }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">联系电话</span>
+              <span class="info-value">{{ order.receiverPhone }}</span>
+            </div>
+            <div class="info-item full-width">
+              <span class="info-label">收货地址</span>
+              <span class="info-value">{{ order.shippingAddress }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">订单金额</span>
+              <span class="info-value price-value">¥{{ order.totalAmount }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">支付方式</span>
+              <span class="info-value">{{ order.paymentMethod || '在线支付' }}</span>
+            </div>
+            <div class="info-item full-width">
+              <span class="info-label">备注</span>
+              <span class="info-value remark-val">{{ order.remark || '无' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 物流信息 -->
+        <LogisticsInfo
+          v-if="order.status >= 2 && order.trackingNo"
+          :order-id="order.id"
+        />
+
+        <!-- 商品清单卡片 -->
+        <div class="glass-card items-card">
+          <div class="card-title-bar">
+            <div class="title-left">
+              <span class="title-indicator"></span>
+              <span class="title-text">商品清单</span>
+              <span class="title-en">PRODUCTS</span>
+            </div>
+          </div>
+
+          <div class="items-list">
+            <div
+              v-for="(item, index) in order.items"
+              :key="item.id"
+              class="product-row"
+              :style="{ animationDelay: `${index * 0.1}s` }"
+            >
+              <div class="product-image-wrapper">
+                <el-image
+                  :src="item.productThumbnail || 'https://via.placeholder.com/60x60?text=No+Image'"
+                  fit="cover"
+                  class="product-image"
+                />
+                <div class="image-scanline"></div>
+                <div class="image-index">{{ String(index + 1).padStart(2, '0') }}</div>
+              </div>
+              <div class="product-detail">
+                <div class="product-name">{{ item.productName }}</div>
+                <div class="product-price-row">
+                  <span class="product-unit-price">¥{{ item.price }}</span>
+                  <span class="product-qty">x {{ item.quantity }}</span>
+                </div>
+              </div>
+              <div class="product-subtotal">
+                <span class="subtotal-label">小计</span>
+                <span class="subtotal-amount">¥{{ item.subtotal || (item.price * item.quantity).toFixed(2) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 订单总计 -->
+          <div class="order-total-bar">
+            <div class="total-decoration"></div>
+            <span class="total-label">订单总计</span>
+            <span class="total-amount">¥{{ order.totalAmount }}</span>
+          </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="action-bar" v-if="order">
+          <button
+            v-if="order.status === 0"
+            class="cyber-btn neon-cyan lg"
+            @click="goToPay"
+          >
+            <span class="btn-glow"></span>
+            <span class="btn-icon">&#9654;</span>
+            立即支付
+          </button>
+          <button
+            v-if="order.status === 0"
+            class="cyber-btn outline lg"
+            @click="cancelOrder"
+          >
+            取消订单
+          </button>
+          <button
+            v-if="order.status === 2"
+            class="cyber-btn neon-green lg"
+            @click="confirmReceive"
+          >
+            <span class="btn-glow"></span>
+            <span class="btn-icon">&#10003;</span>
+            确认收货
+          </button>
+          <button
+            v-if="order.status >= 2 && order.status <= 3"
+            class="cyber-btn neon-gold lg"
+            @click="requestRefund"
+          >
+            <span class="btn-glow"></span>
+            <span class="btn-icon">&#8635;</span>
+            申请退款
+          </button>
+        </div>
+      </template>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import NavHeader from '@/components/NavHeader.vue'
+import LogisticsInfo from '@/components/LogisticsInfo.vue'
+import request from '@/api/request'
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+
+const route = useRoute()
+const router = useRouter()
+const order = ref(null)
+const loading = ref(false)
+
+const statusType = (status) => {
+  const map = {
+    0: 'warning',   // 待支付
+    1: 'primary',   // 已支付
+    2: 'success',   // 已发货
+    3: 'success',   // 已完成
+    4: 'warning',   // 退款中
+    5: 'info',      // 已退款
+    '-1': 'danger'  // 已取消
+  }
+  return map[status] || 'info'
+}
+
+const fetchOrder = async () => {
+  loading.value = true
+  try {
+    const res = await request.get(`/orders/${route.params.id}`)
+    order.value = res.data
+  } catch (e) {
+    ElMessage.error('获取订单详情失败')
+    console.error(e)
+  } finally {
+    loading.value = false
+  }
+}
+
+const goToPay = () => {
+  router.push(`/orders/${order.value.id}/pay`)
+}
+
+const cancelOrder = async () => {
+  try {
+    await ElMessageBox.confirm('确认取消该订单吗？', '提示', { type: 'warning' })
+    await request.put(`/orders/${order.value.id}/cancel`)
+    ElMessage.success('订单已取消')
+    fetchOrder()
+  } catch (e) {
+    if (e !== 'cancel') console.error(e)
+  }
+}
+
+const confirmReceive = async () => {
+  try {
+    await ElMessageBox.confirm('确认已收到商品吗？', '提示', { type: 'warning' })
+    await request.put(`/orders/${order.value.id}/receive`)
+    ElMessage.success('确认收货成功')
+    fetchOrder()
+  } catch (e) {
+    if (e !== 'cancel') console.error(e)
+  }
+}
+
+const requestRefund = async () => {
+  try {
+    const { value } = await ElMessageBox.prompt('请输入退款原因', '申请退款', {
+      confirmButtonText: '提交',
+      cancelButtonText: '取消',
+      inputPattern: /\S+/,
+      inputErrorMessage: '请输入退款原因'
+    })
+    await request.post(`/orders/${order.value.id}/refund`, { reason: value })
+    ElMessage.success('退款申请已提交')
+    fetchOrder()
+  } catch (e) {
+    if (e !== 'cancel') console.error(e)
+  }
+}
+
+onMounted(fetchOrder)
+</script>
+
+<style scoped>
+/* ===== CSS 变量 ===== */
+:root {
+  --sakura: #FFB7C5;
+  --neon-purple: #B388FF;
+  --deep-blue: #1A1A2E;
+  --cyber-blue: #16213E;
+  --neon-cyan: #00F5FF;
+  --neon-pink: #FF6B9D;
+  --gold: #FFD700;
+  --text-primary: #E8E8E8;
+  --text-secondary: #9CA3AF;
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+/* ===== 全局页面 ===== */
+.order-detail-page {
+  min-height: 100vh;
+  background: var(--deep-blue);
+  background-image:
+    radial-gradient(ellipse at 15% 30%, rgba(179, 136, 255, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 60%, rgba(0, 245, 255, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 40% 90%, rgba(255, 107, 157, 0.05) 0%, transparent 50%);
+  font-family: 'Zen Maru Gothic', 'Noto Sans SC', sans-serif;
+  color: var(--text-primary);
+  padding-bottom: 80px;
+}
+
+/* ===== 容器 ===== */
+.cyber-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 30px 20px;
+}
+
+/* ===== 返回导航 ===== */
+.back-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 0;
+  margin-bottom: 10px;
+  transition: all 0.3s ease;
+  animation: fadeSlideDown 0.4s ease-out;
+}
+
+.back-nav:hover {
+  gap: 14px;
+}
+
+.back-nav:hover .back-arrow {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+}
+
+.back-arrow {
+  font-size: 18px;
+  color: var(--text-secondary);
+  transition: all 0.3s ease;
+}
+
+.back-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}
+
+.back-line {
+  display: inline-block;
+  width: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--neon-cyan), transparent);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.back-nav:hover .back-line {
+  opacity: 1;
+  width: 60px;
+}
+
+/* ===== 页面标题 ===== */
+.page-header {
+  text-align: center;
+  margin-bottom: 36px;
+  animation: fadeSlideDown 0.6s ease-out;
+}
+
+.header-decoration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.deco-line {
+  display: inline-block;
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+}
+
+.deco-diamond {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--neon-cyan);
+  transform: rotate(45deg);
+  box-shadow: 0 0 8px var(--neon-cyan);
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple), var(--sakura));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+}
+
+.title-icon {
+  font-size: 14px;
+  -webkit-text-fill-color: var(--neon-pink);
+  margin: 0 6px;
+}
+
+.page-subtitle {
+  font-size: 11px;
+  letter-spacing: 8px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  text-transform: uppercase;
+}
+
+/* ===== 玻璃卡片 ===== */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 24px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  animation: fadeSlideUp 0.5s ease-out both;
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.3), rgba(179, 136, 255, 0.3), transparent);
+}
+
+.glass-card:hover {
+  border-color: rgba(0, 245, 255, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 245, 255, 0.04);
+}
+
+.items-card {
+  animation-delay: 0.15s;
+}
+
+/* ===== 卡片标题栏 ===== */
+.card-title-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.title-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.title-indicator {
+  width: 3px;
+  height: 20px;
+  background: linear-gradient(180deg, var(--neon-cyan), var(--neon-purple));
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(0, 245, 255, 0.3);
+}
+
+.title-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 1px;
+}
+
+.title-en {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+/* ===== 霓虹状态徽章 ===== */
+.neon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: pulse-dot 2s infinite;
+}
+
+.badge-0 {
+  background: rgba(255, 215, 0, 0.1);
+  color: var(--gold);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+}
+.badge-0 .badge-dot { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+
+.badge-1 {
+  background: rgba(0, 245, 255, 0.1);
+  color: var(--neon-cyan);
+  border: 1px solid rgba(0, 245, 255, 0.25);
+}
+.badge-1 .badge-dot { background: var(--neon-cyan); box-shadow: 0 0 6px var(--neon-cyan); }
+
+.badge-2 {
+  background: rgba(0, 255, 136, 0.1);
+  color: #00FF88;
+  border: 1px solid rgba(0, 255, 136, 0.25);
+}
+.badge-2 .badge-dot { background: #00FF88; box-shadow: 0 0 6px #00FF88; }
+
+.badge-3 {
+  background: rgba(179, 136, 255, 0.1);
+  color: var(--neon-purple);
+  border: 1px solid rgba(179, 136, 255, 0.25);
+}
+.badge-3 .badge-dot { background: var(--neon-purple); box-shadow: 0 0 6px var(--neon-purple); }
+
+.badge-4 {
+  background: rgba(255, 215, 0, 0.1);
+  color: var(--gold);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+}
+.badge-4 .badge-dot { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+
+.badge-5 {
+  background: rgba(156, 163, 175, 0.1);
+  color: var(--text-secondary);
+  border: 1px solid rgba(156, 163, 175, 0.25);
+}
+.badge-5 .badge-dot { background: var(--text-secondary); box-shadow: 0 0 6px var(--text-secondary); }
+
+.badge--1 {
+  background: rgba(255, 107, 157, 0.1);
+  color: var(--neon-pink);
+  border: 1px solid rgba(255, 107, 157, 0.25);
+}
+.badge--1 .badge-dot { background: var(--neon-pink); box-shadow: 0 0 6px var(--neon-pink); }
+
+/* ===== 信息网格 ===== */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px 32px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.info-label {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.order-no-val {
+  font-family: 'Courier New', monospace;
+  color: var(--neon-cyan);
+  letter-spacing: 0.5px;
+}
+
+.price-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--neon-pink);
+  text-shadow: 0 0 16px rgba(255, 107, 157, 0.35);
+}
+
+.remark-val {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* ===== 商品列表 ===== */
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.product-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 12px;
+  border-radius: 10px;
+  transition: all 0.25s ease;
+  animation: fadeSlideRight 0.4s ease-out both;
+  position: relative;
+}
+
+.product-row::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 60px;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), transparent);
+}
+
+.product-row:last-child::after {
+  display: none;
+}
+
+.product-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.product-image-wrapper {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid var(--glass-border);
+}
+
+.product-image {
+  width: 64px;
+  height: 64px;
+  display: block;
+}
+
+.image-scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 245, 255, 0.03) 2px,
+    rgba(0, 245, 255, 0.03) 4px
+  );
+  pointer-events: none;
+}
+
+.image-index {
+  position: absolute;
+  bottom: 2px;
+  right: 4px;
+  font-size: 9px;
+  font-family: 'Courier New', monospace;
+  color: var(--neon-cyan);
+  opacity: 0.6;
+  text-shadow: 0 0 4px rgba(0, 245, 255, 0.5);
+}
+
+.product-detail {
+  flex: 1;
+  min-width: 0;
+}
+
+.product-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.product-price-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.product-unit-price {
+  font-size: 13px;
+  color: var(--sakura);
+  font-weight: 600;
+}
+
+.product-qty {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.product-subtotal {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.subtotal-label {
+  display: block;
+  font-size: 10px;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+}
+
+.subtotal-amount {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--neon-pink);
+  text-shadow: 0 0 10px rgba(255, 107, 157, 0.3);
+}
+
+/* ===== 订单总计 ===== */
+.order-total-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  padding: 24px 0 4px;
+  margin-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+}
+
+.total-decoration {
+  position: absolute;
+  top: -1px;
+  right: 0;
+  width: 120px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--neon-cyan), var(--neon-purple));
+}
+
+.total-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}
+
+.total-amount {
+  font-size: 28px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--neon-pink), var(--sakura));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 12px rgba(255, 107, 157, 0.3));
+}
+
+/* ===== 操作按钮区域 ===== */
+.action-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 36px;
+  flex-wrap: wrap;
+  animation: fadeSlideUp 0.5s ease-out 0.3s both;
+}
+
+/* ===== 赛博按钮 ===== */
+.cyber-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Zen Maru Gothic', 'Noto Sans SC', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.cyber-btn.lg {
+  padding: 14px 36px;
+  font-size: 15px;
+  border-radius: 10px;
+}
+
+.cyber-btn.neon-cyan {
+  background: linear-gradient(135deg, rgba(0, 245, 255, 0.18), rgba(0, 245, 255, 0.06));
+  color: var(--neon-cyan);
+  border: 1px solid rgba(0, 245, 255, 0.35);
+}
+.cyber-btn.neon-cyan:hover {
+  background: linear-gradient(135deg, rgba(0, 245, 255, 0.28), rgba(0, 245, 255, 0.12));
+  box-shadow: 0 0 24px rgba(0, 245, 255, 0.2), inset 0 0 24px rgba(0, 245, 255, 0.05);
+  transform: translateY(-2px);
+}
+
+.cyber-btn.neon-green {
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.15), rgba(0, 255, 136, 0.05));
+  color: #00FF88;
+  border: 1px solid rgba(0, 255, 136, 0.35);
+}
+.cyber-btn.neon-green:hover {
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.25), rgba(0, 255, 136, 0.1));
+  box-shadow: 0 0 24px rgba(0, 255, 136, 0.2), inset 0 0 24px rgba(0, 255, 136, 0.05);
+  transform: translateY(-2px);
+}
+
+.cyber-btn.neon-gold {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.05));
+  color: var(--gold);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+}
+.cyber-btn.neon-gold:hover {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 215, 0, 0.1));
+  box-shadow: 0 0 24px rgba(255, 215, 0, 0.2), inset 0 0 24px rgba(255, 215, 0, 0.05);
+  transform: translateY(-2px);
+}
+
+.cyber-btn.outline {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.cyber-btn.outline:hover {
+  color: var(--neon-pink);
+  border-color: rgba(255, 107, 157, 0.3);
+  background: rgba(255, 107, 157, 0.05);
+}
+
+.btn-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  transform: translate(-50%, -50%);
+  transition: width 0.4s ease, height 0.4s ease;
+  pointer-events: none;
+}
+
+.cyber-btn:active .btn-glow {
+  width: 200px;
+  height: 200px;
+}
+
+.btn-icon {
+  font-size: 12px;
+}
+
+/* ===== 动画 ===== */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeSlideRight {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 768px) {
+  .cyber-container {
+    padding: 20px 12px;
+  }
+
+  .page-title {
+    font-size: 22px;
+    letter-spacing: 2px;
+  }
+
+  .glass-card {
+    padding: 20px 16px;
+    border-radius: 12px;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .product-row {
+    padding: 12px 8px;
+    gap: 12px;
+  }
+
+  .product-image-wrapper,
+  .product-image {
+    width: 52px;
+    height: 52px;
+  }
+
+  .product-name {
+    font-size: 13px;
+  }
+
+  .subtotal-amount {
+    font-size: 14px;
+  }
+
+  .total-amount {
+    font-size: 22px;
+  }
+
+  .action-bar {
+    gap: 10px;
+  }
+
+  .cyber-btn.lg {
+    padding: 12px 24px;
+    font-size: 14px;
+  }
+
+  .card-title-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .product-subtotal {
+    display: none;
+  }
+
+  .product-row {
+    flex-wrap: wrap;
+  }
+
+  .product-detail {
+    flex: 1;
+  }
+
+  .cyber-btn.lg {
+    width: 100%;
+  }
+
+  .action-bar {
+    flex-direction: column;
+    width: 100%;
+  }
+}
+</style>
